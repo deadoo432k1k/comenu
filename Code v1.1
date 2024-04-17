@@ -5,8 +5,8 @@ local function Text(text)
 end
 
 Text("-----------------------------------------------------")
-Text("   Comenu    ")
-text(" created by deadoo432kik ")
+Text("   Comenu v1.1  ")
+Text(" created by deadoo432kik ")
 Text("-----------------------------------------------------")
 
 playere = deadoo:add_submenu("Player")
@@ -508,9 +508,106 @@ end, function()
 
     infiniteammo = not infiniteammo
 
-	  repeat
+	repeat
         sleep(0.2)
-	      weapon:set_infinite_ammo(infiniteammo)
+	    weapon:set_infinite_ammo(infiniteammo)
     until(not infiniteammo)
 
+end)
+
+-------------------vehicle--------------------
+
+
+vehicle = deadoo:add_submenu("Vehicle")
+
+vehicle:add_action("Deliver personal vehicle", function()
+
+    menu.deliver_personal_vehicle()
+	
+end)
+
+vehicle:add_action("Deliver terrorbyte", function()
+
+    menu.deliver_terrorbyte()
+	
+end)
+
+vehicle:add_action("Deliver avenger", function()
+
+    menu.deliver_avenger()
+	
+end)
+
+kcv = false
+
+vehicle:add_toggle("Kill curent vehicle", function()
+
+    return kcv
+	
+end, function()
+
+    kcv = not kcv
+	
+	if kcv then
+	    menu.kill_current_vehicle()
+	else
+	    menu.heal_vehicle()
+	end
+	
+end)
+
+vehicle:add_action("Heal current vehicle", function()
+
+    menu.heal_vehicle()
+	
+end)
+
+cbt = false
+
+vehicle:add_toggle("cant be targeted", function()
+
+    return cbt
+	
+end, function()
+
+    cbt = not cbt
+	localplayer:set_can_be_targeted(cbt)
+	
+end)
+
+-------------online service-----------------------------------
+
+Os = deadoo:add_submenu("Online service")
+
+bm = false
+
+Os:add_toggle("Big map", function()
+    return bm
+end, function()
+    bm = not bm
+	menu.set_big_map(bm)
+end)
+
+ba = false
+
+Os:add_toggle("Bribe authorities", function()
+    return ba
+end, function()
+    ba = not ba
+	repeat
+	    menu.set_bribe_authorities(ba)
+		sleep(600)
+	until(not ba)
+end)
+
+go = false
+
+Os:add_toggle("Ghost organisation", function()
+    return go
+end, function()
+    go = not go
+	repeat
+	    sleep(1)
+	    menu.set_ghost_organisation(go)
+	until(not go)
 end)
