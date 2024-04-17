@@ -1,0 +1,516 @@
+deadoo = menu.add_submenu("Comenu")
+
+local function Text(text)
+	deadoo:add_action(text, function() end)
+end
+
+Text("-----------------------------------------------------")
+Text("   Comenu    ")
+text(" created by deadoo432kik ")
+Text("-----------------------------------------------------")
+
+playere = deadoo:add_submenu("Player")
+
+---------------------------Player Option----------------------------------------------------------------------
+
+aima = false
+
+playere:add_toggle("aim assist", function()
+    return aima
+end, function()
+    aima = not aima
+    menu.set_assisted_aim(aima)
+end)
+
+InvGod = false
+InvGodL = false
+
+function InvGodF()
+	while true do
+		if localplayer:get_health() ~= 0 then
+			if InvGod == true then
+				menu.heal_all()
+			end
+		end
+		sleep(0.2)
+	end
+end
+
+playere:add_toggle("invisible godmode", function()
+	return InvGod
+end, function(God)
+	InvGod = not InvGod
+	if InvGodL == false then
+		InvGodF()
+	else
+		InvGodL = true
+	end
+end)
+
+playere:add_action("Heal", function()
+	menu.heal_all()
+end)
+
+playere:add_action("suicide", function()
+	menu.suicide_player()
+end)
+
+
+GodmodeState = false
+playere:add_toggle("Godmode", function()
+    return GodmodeState
+end, function()
+     GodmodeState = not GodmodeState
+     localplayer:set_godmode(GodmodeState)
+end)
+
+-----------------------------------------Online Player-------------------------------------------------
+
+local Config = {}
+Config.SubmenuStyle = false
+
+local function null() end
+
+local function Text(submenu, text)
+	if submenu ~= nil then
+		submenu:add_action(text, null)
+	else
+		menu.add_action(text, null)
+	end
+end
+
+local function sqrt(i)
+	return math.sqrt(i)
+end
+
+local function DistanceToSqr(vec1, vec2)
+	return ((vec2.x - vec1.x) ^ 2) + ((vec2.y - vec1.y) ^ 2) + ((vec2.z - vec1.z) ^ 2)
+end
+
+local function Distance(vec1, vec2)
+	return sqrt(DistanceToSqr(vec1, vec2))
+end
+
+local function floor(num)
+	return math.floor(num)
+end
+
+local function clamp(num, min, max)
+	if num > max then
+		return max
+	elseif num < min then
+		return min
+	else
+		return num
+	end
+end
+-- Player / Ped functions
+local function IsPlayer(ped)
+	if ped == nil or ped:get_pedtype() >= 4 then
+		return false
+	end
+	return true
+end
+
+local function IsNPC(ped)
+	if ped == nil or ped:get_pedtype() < 4 then
+		return false
+	end
+	return true
+end
+
+local function IsModder(ply)
+	if not IsPlayer(ply) then
+		return false
+	end
+
+	if ply:get_max_health() < 100 then
+		return true
+	end
+	if ply:is_in_vehicle() and ply:get_godmode() then
+		return true
+	end
+	if ply:get_run_speed() > 1.0 or ply:get_swim_speed() > 1.0 then
+		return true
+	end
+
+	return false
+end
+
+local function GetPlayerCount()
+	return player.get_number_of_players()
+end
+
+local selectedplayer = -1
+
+local function f_p_o(ply_id, ply, ply_name)
+	local text = ""
+
+	if player.get_player_ped(ply_id) == nil then
+		return "**Invalid**"
+	end
+
+	-- Player Name
+if ply == localplayer then
+		text = text .. "YOU"
+	else
+		text = text .. ply_name
+	end
+
+	if IsModder(ply) then
+		text = text .. "*"
+	end
+
+	if ply:get_godmode() then
+		text = text .. " | God"
+	else
+		local max_hp = ply:get_max_health()
+		text = text .. " | " .. floor(clamp((ply:get_health() - 100), 0, max_hp) / (max_hp - 100) * 100) .. "\u{2665}"
+		local armour = ply:get_armour()
+		if armour > 0 then
+			text = text .. " | " .. floor(ply:get_armour()) .. "\u{1f455}"
+		end
+	end
+
+	-- Is In Vehicle
+	if ply:is_in_vehicle() then
+		text = text .. " | \u{1F697}"
+	end
+
+	-- Player Wanted Level
+	local wanted = ply:get_wanted_level()
+
+	if wanted > 0 then
+		text = text .. " | " .. wanted .. "\u{2730}"
+	end
+
+	text = text .. " | " .. floor(Distance(ply:get_position(), localplayer:get_position())) .. " m"
+
+	return text
+end
+
+local function add_player_option(submenu, ply_id, ply, ply_name)
+	local text = f_p_o(ply_id, ply, ply_name)
+
+	local d = ply_id
+
+	if submenu ~= nil then
+		submenu:add_bare_item(text, function()
+			return f_p_o(ply_id, ply, ply_name) .. "|" .. (selectedplayer == ply_id and "\u{2713}" or "\u{25A1}")
+		end, function()
+			selectedplayer = d
+		end, null, null)
+	else
+		menu.add_bare_item(text, function()
+			return f_p_o(ply_id, ply, ply_name) .. "|" .. (selectedplayer == ply_id and "\u{2713}" or "\u{25A1}")
+		end, function()
+			selectedplayer = d
+		end, null, null)
+	end
+end
+
+local function add_info_option(submenu, text, funcget, forceplayer)
+	local func = function()
+		local ply = player.get_player_ped(forceplayer and forceplayer or selectedplayer)
+		if not ply then
+			return Text .. ": **Invalid**"
+		end
+
+		return text .. ": " .. funcget(ply)
+	end
+
+	if submenu ~= nil then
+		submenu:add_bare_item(text .. ": ", func, null, null, null)
+	else
+		menu.add_bare_item(text .. ": ", func, null, null, null)
+	end
+end
+
+local function ungod(ply)
+
+   if not ply or ply == 0 then
+        return
+   end
+   
+   peds = player.get_player_ped(selectedplayer)
+   
+   repeat
+        peds:set_godmode(false)
+		sleep(0.1)
+		ungod()
+   until(not ply)
+   
+end
+
+local lol = nil
+local was_opened = true
+local nfreeze = 0
+
+local function BuildListSub()
+	lol:add_bare_item("---Player List " .. GetPlayerCount() .. " Players---", function()
+		was_opened = true
+		return "---Player List, " .. GetPlayerCount() .. " Players---"
+	end, null, null, null)
+
+	add_info_option(subinfo, "Player", function()
+		return player.get_player_name(selectedplayer)
+	end)
+
+    tril:add_action("jsp", function(p)
+        Eventl(player.get_player_name(selectedplayer))
+    end)
+		
+    tril:add_action("antigodmode", function()
+		ungod(player.get_player_ped(selectedplayer))
+    end)
+
+	add_info_option(subinfo, "Distance from you", function(p)
+		return floor(Distance(p:get_position(), localplayer:get_position())) .. " m"
+	end)
+	add_info_option(subinfo, "Health", function(p)
+		return floor(clamp((p:get_health() - 100), 0, p:get_max_health()) / (p:get_max_health() - 100) * 100)
+	end)
+	add_info_option(subinfo, "Armour", function(p)
+		return floor(p:get_armour())
+	end)
+	add_info_option(subinfo, "Is In GodMode", function(p)
+		return (p:get_godmode() and "Yes" or "No")
+	end)
+	add_info_option(subinfo, "Is Modder", function(p)
+		return (IsModder(p) and "Yes" or "No")
+	end)
+	add_info_option(subinfo, "X", function(p)
+		return p:get_position().x
+	end)
+	add_info_option(subinfo, "Y", function(p)
+		return p:get_position().y
+	end)
+	add_info_option(subinfo, "Z", function(p)
+		return p:get_position().z
+	end)
+end
+
+local function BuildList()
+	lol:add_bare_item("---Player List " .. GetPlayerCount() .. " Players---", function()
+		was_opened = true
+		return "---Player List, " .. GetPlayerCount() .. " Players---"
+	end, null, null, null)
+
+	for i = 0, 31 do
+		local ply = player.get_player_ped(i)
+		if ply then
+			add_player_option(lol, i, ply, player.get_player_name(i))
+		end
+	end
+
+	Text(lol, "---End---")
+
+	local subinfo = lol:add_submenu("Player Info")
+        local tril = lol:add_submenu("troll")
+
+	add_info_option(subinfo, "Player", function()
+		return player.get_player_name(selectedplayer)
+	end)
+
+    tril:add_action("jsp", function(p)
+        Eventl(player.get_player_name(selectedplayer))
+    end)
+		
+	tril:add_action("antigodmode", function()
+		ungod(player.get_player_ped(selectedplayer))
+    end)
+
+	add_info_option(subinfo, "Distance from you", function(p)
+		return floor(Distance(p:get_position(), localplayer:get_position())) .. " m"
+	end)
+	add_info_option(subinfo, "Health", function(p)
+		return floor(clamp((p:get_health() - 100), 0, p:get_max_health()) / (p:get_max_health() - 100) * 100)
+	end)
+	add_info_option(subinfo, "Armour", function(p)
+		return floor(p:get_armour())
+	end)
+	add_info_option(subinfo, "Is In Vehicle", function(p)
+		return (p:is_in_vehicle() and "Yes" or "No")
+	end)
+	add_info_option(subinfo, "Vehicle Health", function(p)
+		return (
+			(p:is_in_vehicle() and p:get_current_vehicle() ~= nil)
+				and floor(p:get_current_vehicle():get_health() / (p:get_current_vehicle():get_max_health()) * 100)
+			or 0
+		)
+	end)
+	add_info_option(subinfo, "Is In GodMode", function(p)
+		return (p:get_godmode() and "Yes" or "No")
+	end)
+	add_info_option(subinfo, "Is Modder", function(p)
+		return (IsModder(p) and "Yes" or "No")
+	end)
+	add_info_option(subinfo, "X", function(p)
+		return p:get_position().x
+	end)
+	add_info_option(subinfo, "Y", function(p)
+		return p:get_position().y
+	end)
+	add_info_option(subinfo, "Z", function(p)
+		return p:get_position().z
+	end)
+end
+
+function Update()
+	lol:clear()
+	if Config.SubmenuStyle then
+		BuildListSub()
+	else
+		BuildList()
+	end
+end
+
+lol = deadoo:add_submenu("Online Players", Update)
+
+----------------------------------------------Weapon---------------------------------------------------
+
+wepon = deadoo:add_submenu("Weapon")
+    
+local function add_info_option2(submenu, text, funcget)
+
+    local func2 = function()
+	    return text .. ": " .. funcget()
+	end
+	
+	if submenu ~= nil then
+	    submenu:add_bare_item(text .. ": ", func2, null, null, null)
+	else
+	    menu.add_bare_item(text .. ": ", func2, null, null, null)
+	end
+	
+end
+
+local function wil()
+
+    weapon = localplayer:get_current_weapon()
+	
+	add_info_option2(wapon, "weapon", function()
+	    return weapon:get_name_hash()
+	end)
+
+    add_info_option2(wapon, "aim fov", function()
+        return weapon:get_aim_fov()
+    end)
+	
+	add_info_option2(wapon, "range", function()
+	    return weapon:get_range()
+	end)
+
+    add_info_option2(wapon, "damage", function()
+        return weapon:get_bullet_damage()
+    end)
+	
+	add_info_option2(wapon, "ammo", function()
+	    return weapon:get_current_ammo()
+	end)
+	
+end
+
+local function wil2()
+
+    weapon = localplayer:get_current_weapon()
+	
+	add_info_option2(wapon, "weapon", function()
+	    return weapon:get_name_hash()
+	end)
+
+    add_info_option2(wapon, "aim fov", function()
+        return weapon:get_aim_fov()
+    end)
+	
+	add_info_option2(wapon, "range", function()
+	    return weapon:get_range()
+	end)
+
+    add_info_option2(wapon, "damage", function()
+        return weapon:get_bullet_damage()
+    end)
+	
+	add_info_option2(wapon, "ammo", function()
+	    return weapon:get_current_ammo()
+	end)
+	
+end
+
+local function update2()
+
+    wapon:clear()
+	if Config.SubmenuStyle then
+	    wil()
+	else
+	    wil2()
+	end
+	
+end
+
+wapon = wepon:add_submenu("weapon Info", update2)
+
+weapon = localplayer:get_current_weapon()
+
+oneshot = false
+
+wepon:add_toggle("One Shot Bullet", function()
+
+    return oneshot
+end, function()
+
+    oneshot = not oneshot
+	
+	if oneshot then
+	    repeat
+		    sleep(0.1)
+	        weapon:set_bullet_damage(1000)
+	    	weapon:set_vehicle_force(10000000)
+	    until(not oneshot)
+	end
+	
+	if not oneshot then
+	    weapon:set_vehicle_force(100)
+		weapon:set_bullet_damage(30)
+	end
+	
+end)
+
+infinran = false
+
+wepon:add_toggle("Infinite Range", function()
+
+    return infinran
+end, function()
+
+    infinran = not infinran
+	
+	if infinran then
+	    repeat
+		    sleep(0.1)
+	        weapon:set_range(7000)
+		until(not infinran)
+	end
+	
+	if not infinran then
+	    weapon:set_range(50)
+	end
+	
+end)	
+
+infiniteammo = false
+
+wepon:add_toggle("infinite ammo", function()
+
+    return infiniteammo
+	
+end, function()
+
+    infiniteammo = not infiniteammo
+
+	  repeat
+        sleep(0.2)
+	      weapon:set_infinite_ammo(infiniteammo)
+    until(not infiniteammo)
+
+end)
